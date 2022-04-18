@@ -1,0 +1,316 @@
+body {
+    margin: 0;
+    font-family: 'Ubuntu', sans-serif;
+}
+#page-wrap {
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+}
+/* Index Page */
+#main-container {
+    display: flex;
+    gap: 2em;
+    padding: 2em;
+    justify-content: center;
+    align-items: center;
+}
+#main-container img {
+    width: 10em;
+}
+.mode-selection-container {
+    display: grid;
+    grid-auto-flow: column;
+    border-bottom: 1px solid black;
+}
+.mode-selection-btn {
+    padding-bottom: 1em;
+    padding-top: 1em;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.mode-selection-btn:hover {
+    color: #01baef;
+}
+.mode-selection-btn.selected {
+    color: #0077b6;
+}
+#bot-mode {
+    text-align: right;
+    border-right: 1px solid black;
+    padding-right: 1em;
+}
+#multiplayer-mode {
+    padding-left: 1em;
+}
+.selected-mode-container .singleplayer-mode, .selected-mode-container .multiplayer-mode {
+    display: none;
+}
+.selected-mode-container {
+    display: flex;
+    justify-content: center;
+    padding: 2em 0;
+}
+#room-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+#room-container form#gamelobby {
+    display: none;
+    position: absolute;
+    top: 0;
+    width: 100%;
+    background: white;
+    padding: 20px 20px;
+    margin: -20px;
+    z-index: 3;
+    border-radius: 20px;
+    gap: 1em;
+}
+#room-container #games-list {
+    display: none;
+}
+
+#room-container #games-list.opened {
+    display: block;
+    position: absolute;
+    top: 20em;
+    left: 20%;
+    background: white;
+    right: 20%;
+    z-index: 3;
+    padding: 2em;
+    border-radius: 20px;
+    transition: all 0.3s;
+}
+#room-container #games-list.opened > * {
+    display: grid;
+    grid-template-columns: repeat(4,1fr);
+}
+#room-container #games-list span.no-games-msg, .singleplayer-mode span {
+    text-align: center;
+    padding-top: 1em;
+    font-weight: bold;
+    font-size: 1.2em;
+    color: #ee2d2f;
+}
+.new-game-container {
+    position: relative;
+}
+button.blue-button {
+    background: #0077b6;
+    border: none;
+    padding: 0.7em 0;
+    font-family: 'Ubuntu',sans-serif;
+    font-size: 2em;
+    border-radius: 15px;
+    color: white;
+    cursor: pointer;
+    width: 10em;
+    transition: 0.3s all;
+}
+button.green-button {
+    background: #008d30;
+    border: none;
+    padding: 0.7em 0;
+    font-family: 'Ubuntu',sans-serif;
+    font-size: 2em;
+    border-radius: 15px;
+    color: white;
+    cursor: pointer;
+    width: 10em;
+    transition: 0.3s all;
+}
+button.blue-button:hover {
+    background: #01baef;
+}
+button.green-button:hover {
+    background: #00b032;
+}
+form#gamelobby input {
+    background: white;
+    border: 1px solid #0077b6;
+    border-radius: 15px;
+    padding: 0.8em;
+}
+form#gamelobby label {
+    font-size: 1.1em;
+}
+.checkbox-label {
+    display: block;
+    position: relative;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+.checkbox-label input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+.checkbox-label .checkmark {
+    position: absolute;
+    top: 0;
+    height: 1.3em;
+    width: 1.3em;
+    background-color: #fff;
+    border: 1px solid #0077b6;
+    border-radius: 5px;
+    margin-top: -3px;
+    margin-left: 1em;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.checkbox-label input:hover ~ .checkmark {
+    background-color: #01baef;
+}
+.checkbox-label input:checked ~ .checkmark {
+    background-color: #01baef;
+}
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+    margin-left: -1px;
+    margin-top: -1px;
+}
+.checkbox-label input:checked ~ .checkmark:after {
+    display: block;
+}
+.checkbox-label .checkmark:after {
+    left: 9px;
+    top: 5px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 3px 3px 0;
+    -webkit-transform: rotate(45deg);
+    -ms-transform: rotate(45deg);
+    transform: rotate(45deg);
+}
+.lobbysize-container {
+    display: flex;
+    gap: 1em;
+}
+.lobbysize-dropdown {
+    position: relative;
+    background: white;
+    border: 1px solid #0077b6;
+    border-radius: 15px;
+}
+.lobbysize-dropdown.show {
+    border-radius: 15px 15px 0 0;
+}
+.dropdown-selected-option {
+    height: 2.3em;
+    display: flex;
+    width: 4em;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.1s;
+}
+.dropdown-options {
+    max-height: 0;
+    overflow: hidden;
+    transition: all 0.1s;
+}
+.lobbysize-dropdown .dropdown-selected-option:hover {
+    background: #01baef;
+    border-radius: 15px;
+}
+.lobbysize-dropdown.show .dropdown-selected-option {
+    background: #01baef;
+    border-radius: 15px 15px 0 0;
+}
+.lobbysize-dropdown.show .dropdown-selected-option:hover {
+    border-radius: 15px 15px 0 0;
+}
+.lobbysize-dropdown.show .dropdown-option:hover {
+    background: #0077b6;
+}
+.dropdown-options.show {
+    overflow: visible;
+    max-height: none;
+    position: absolute;
+    background: white;
+    border: 1px solid #0077b6;
+    border-radius: 0 0 15px 15px;
+    margin-left: -1px;
+    width: 100%;
+}
+.dropdown-option {
+    border-top: 1px solid #0077b6;
+    height: 2.3em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.1s;
+}
+.dropdown-option:last-of-type {
+    border-radius: 0 0 15px 15px;
+}
+#games-list.opened span {
+    border-right: 1px solid black;
+    padding: 1em;
+    border-bottom: 1px solid black;
+}
+#games-list.opened a {
+    padding: 1em;
+    border-bottom: 1px solid black;
+}
+.game-list-table-head span {
+    border-right: 1px solid black;
+    padding: 1em;
+    border-bottom: 1px solid black;
+}
+.game-list-table-head span:last-of-type {
+    border-right: none!important;
+}
+/* Homepage css END*/
+/* Game room css */
+#message-container {
+    width: 80%;
+    max-width: 1200px;
+}
+#message-container div {
+    background-color: #CCC;
+    padding: 5px;
+}
+#message-container div:nth-child(2n) {
+    background-color: #FFF;
+}
+#send-container {
+    position: fixed;
+    padding-bottom: 30px;
+    bottom: 0;
+    background-color: white;
+    max-width: 1200px;
+    width: 80%;
+    display: flex;
+}
+#message-input {
+    flex-grow: 1;
+}
+/* Game room css END*/
+.open-flex {
+    display: flex!important;
+    flex-direction: column;
+}
+.form-modal-popup.triggered {
+    background-color: rgba(72,74,117,.25);
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    top: 0;
+    transition: 1s;
+}
+h1 {
+    font-size: 3em;
+}
