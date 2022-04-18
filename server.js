@@ -43,26 +43,54 @@ app.get('/:gamelobby', (req, res) => {
         return res.redirect('/')
     }
     res.render('gamelobby', { gameLobby: req.params.gamelobby })
-  })
-// Run when client connects
+})
+
 io.on('connection', socket => {
     let roomsToShow = JSON.parse(JSON.stringify(rooms));
     checkForFullRooms(roomsToShow);
 
-    socket.on('user-joined-lobby', (room) => {
-        console.log('joined')
-        socket.join(room)
-        let socketUsername = 'Guest' + Math.random().toString().slice(2,11);
-        rooms[room].users[socket.id] = socketUsername;
-        socket.to(room).emit('user-connected', socketUsername);
-        roomsToShow = JSON.parse(JSON.stringify(rooms));
-        checkForFullRooms(roomsToShow);
-        io.emit('games-list', roomsToShow);
+    socket.on('user-connected-to-lobby', (room) => {
+        if (rooms[room].settings.privatelobby === true) {
+            socket.emit('roomcode-required', rooms[room])
+            socket.on('roomcode-success', (room) => {
+                socket.join(room)
+                let socketUsername = 'Guest' + Math.random().toString().slice(2,11);
+                rooms[room].users[socket.id] = socketUsername;
+                socket.to(room).emit('user-connected', socketUsername);
+                roomsToShow = JSON.parse(JSON.stringify(rooms));
+                checkForFullRooms(roomsToShow);
+                io.emit('games-list', roomsToShow);
+            })
+        }
+        else {
+            socket.join(room)
+            let socketUsername = 'Guest' + Math.random().toString().slice(2,11);
+            rooms[room].users[socket.id] = socketUsername;
+            socket.to(room).emit('user-connected', socketUsername);
+            roomsToShow = JSON.parse(JSON.stringify(rooms));
+            checkForFullRooms(roomsToShow);
+            io.emit('games-list', roomsToShow);
+        }
     })
     socket.on('send-chat-message', (room, message) => {
         socket.to(room).emit('chat-message', { message: message, name: rooms[room].users[socket.id] })
     })
-    // TO DO on user disconnect
+    socket.on('disconnect', () => {
+        getUserRooms(socket).forEach(room => {
+            socket.to(room).emit('user-disconnected', rooms[room].users[socket.id])
+            delete rooms[room].users[socket.id];
+            roomsToShow = JSON.parse(JSON.stringify(rooms));
+            checkForFullRooms(roomsToShow);
+            checkForEmptyRooms(roomsToShow);
+            if (parseInt(Object.entries(rooms[room].users).length) == 0) {
+                io.emit('games-list', roomsToShow);
+                delete rooms[room]
+            }
+            else {
+                io.emit('games-list', roomsToShow);
+            }
+        })
+    })
     io.emit('games-list', roomsToShow);
 });
 
@@ -73,8 +101,20 @@ server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 function checkForFullRooms(roomsToShow) {
     for (let[roomname] of Object.entries(roomsToShow)) {
         if (parseInt(Object.entries(roomsToShow[roomname].users).length) === parseInt(roomsToShow[roomname].settings.lobbysize)) {
-            delete roomsToShow[roomname];
-            io.emit('room-removed', roomname)
+            roomsToShow[roomname].fullroom = true;
         }
     }
+}
+function checkForEmptyRooms(roomsToShow) {
+    for (let[roomname] of Object.entries(roomsToShow)) {
+        if (parseInt(Object.entries(roomsToShow[roomname].users).length) === 0) {
+            roomsToShow[roomname].emptyroom = true;
+        }
+    }
+}
+function getUserRooms(socket) {
+    return Object.entries(rooms).reduce((names, [name, room]) => {
+        if (room.users[socket.id] != null) names.push(name)
+        return names
+    }, [])
 }
