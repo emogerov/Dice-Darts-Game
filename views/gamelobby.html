@@ -17,12 +17,45 @@
 </head>
 <body>
     <div id="page-wrap">
-        <h1>GAME</h1>
-        <div id="message-container"></div>
-        <form id="send-container">
-            <input type="text" id="message-input">
-            <button type="submit" id="send-button">Send</button>
-        </form>
+        <div id="game-page-container" style="opacity: 0; visibility: hidden;">
+            <div id="main-container">
+                <h1>
+                    <a href="/">Dice Darts <img src="images/dice-darts-logo.svg" alt="Dice-darts logo"></a>
+                </h1>
+            </div>
+            <div id="game-container">
+                <div id="players-info">
+                    <div id="players-list">
+                        <div id="players-names-container">
+                            <span>Players in lobby</span>
+                            <ol id="players-names-list">
+                            </ol>
+                        </div>
+                        <div id="players-status">
+                            <span>Status</span>
+                            <ol id="players-status-list">
+                            </ol>
+                        </div>
+                    </div>
+                    <button class="green-button small-button" onclick="changeStatus()">Ready</button>
+                </div>
+                <div id="game-window-container">
+                    <div id="game-window">
+
+                    </div>
+                    <div id="user-turn-info">
+
+                    </div>
+                </div>
+                <div id="game-chatroom">
+                    <div id="message-container"></div>
+                    <form id="send-container">
+                        <input type="text" id="message-input">
+                        <button type="submit" id="send-button">Send</button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 </body>
 </html>

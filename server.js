@@ -56,20 +56,23 @@ io.on('connection', socket => {
                 socket.join(room)
                 let socketUsername = 'Guest' + Math.random().toString().slice(2,11);
                 rooms[room].users[socket.id] = socketUsername;
-                socket.to(room).emit('user-connected', socketUsername);
+                io.to(room).emit('user-connected', rooms[room].users);
+                socket.to(room).emit('user-connected-chat', socketUsername);
                 roomsToShow = JSON.parse(JSON.stringify(rooms));
                 checkForFullRooms(roomsToShow);
                 io.emit('games-list', roomsToShow);
             })
         }
         else {
+            socket.emit('roomcode-notrequired', room)
             socket.join(room)
-            let socketUsername = 'Guest' + Math.random().toString().slice(2,11);
-            rooms[room].users[socket.id] = socketUsername;
-            socket.to(room).emit('user-connected', socketUsername);
-            roomsToShow = JSON.parse(JSON.stringify(rooms));
-            checkForFullRooms(roomsToShow);
-            io.emit('games-list', roomsToShow);
+                let socketUsername = 'Guest' + Math.random().toString().slice(2,11);
+                rooms[room].users[socket.id] = socketUsername;
+                io.to(room).emit('user-connected', rooms[room].users);
+                socket.to(room).emit('user-connected-chat', socketUsername);
+                roomsToShow = JSON.parse(JSON.stringify(rooms));
+                checkForFullRooms(roomsToShow);
+                io.emit('games-list', roomsToShow);
         }
     })
     socket.on('send-chat-message', (room, message) => {
