@@ -129,32 +129,36 @@ socket.on('user-connected', (usersList, readyPlayers) => {
         let newPlayerStatus = document.createElement('li');
         if (!readyPlayers.includes(guestname)) {
             newPlayerStatus.classList.add('player-unready');
-            newPlayerStatus.innerText = 'Not Ready';
         }
         else {
             newPlayerStatus.classList.add('player-ready');
-            newPlayerStatus.innerText = 'Ready';
         }
         newPlayerStatus.dataset.playername = guestname;
 
         namesList += newPlayer.outerHTML;
         statusList += newPlayerStatus.outerHTML
     }
+
     playersNamesList.innerHTML = namesList;
     playersStatusList.innerHTML = statusList;
+
+    playersNamesList.querySelector("[data-playername="+ usersList[socket.id] +"]").classList.add('you')
 })
 socket.on('user-connected-chat', name => {
     appendMessage(`${name} connected`);
 })
-socket.on('game-host-determined', host => {
-    let startGameButton = document.createElement('button');
-    startGameButton.id = 'startgame-button';
-    startGameButton.classList.add('blue-button');
-    startGameButton.innerText = 'Start Game';
-    gameWindowContainer.append(startGameButton)
-    startGameButton.addEventListener('click', function() {
-        socket.emit('start-game-button-pressed', gameLobby);
-    })
+socket.on('game-host-determined', (host, hostId) => {
+    playersNamesList.querySelector("[data-playername="+ host +"]").id = 'gamehost';
+    if (hostId === socket.id) {
+        let startGameButton = document.createElement('button');
+        startGameButton.id = 'startgame-button';
+        startGameButton.classList.add('blue-button');
+        startGameButton.innerText = 'Start Game';
+        gameWindowContainer.append(startGameButton)
+        startGameButton.addEventListener('click', function() {
+            socket.emit('start-game-button-pressed', gameLobby);
+        })
+    }
 })
 socket.on('press-ready-message', msg => {
     gameMessageContainer.innerText = msg;
@@ -166,10 +170,16 @@ socket.on('waiting-for-host-message', msg => {
     gameMessageContainer.innerText = msg;
 });
 socket.on('user-not-ready', name => {
-    playersStatusList.querySelector("[data-playername="+ name +"]").innerText = "Not Ready";
+    if (playersStatusList.querySelector("[data-playername="+ name +"]").classList.contains('player-ready')) {
+        playersStatusList.querySelector("[data-playername="+ name +"]").classList.remove('player-ready');
+    }
+    playersStatusList.querySelector("[data-playername="+ name +"]").classList.add('player-unready');
 })
 socket.on('user-is-ready', name => {
-    playersStatusList.querySelector("[data-playername="+ name +"]").innerText = "Ready";
+    if (playersStatusList.querySelector("[data-playername="+ name +"]").classList.contains('player-unready')) {
+        playersStatusList.querySelector("[data-playername="+ name +"]").classList.remove('player-unready');
+    }
+    playersStatusList.querySelector("[data-playername="+ name +"]").classList.add('player-ready');
 })
 socket.on('not-enough-players', msg => {
     gameMessageContainer.innerText = msg;
@@ -198,13 +208,21 @@ socket.on('starting-game-lobby-notfull', msg => {
 socket.on('starting-game-lobby-full', msg => {
     gameMessageContainer.innerText = msg;
     socket.emit('game-started-by-host', gameLobby);
+})
+socket.on('game-started', (room,msg,playersScores) => {
     if (document.querySelector('#startgame-button')) {
         document.querySelector('#startgame-button').remove()
     }
-})
-socket.on('game-started', (room,msg,playersScores) => {
+    updateGameInfoUI();
+    let playerTurn = 0;
     gameMessageContainer.innerText = msg;
-    gameLogic(room,playerTurn,playersScores);
+    gameMessageContainer.classList.add('countdown-transition')
+
+    gameMessageContainer.addEventListener('animationend', function(event) {
+        gameMessageContainer.innerText = '';
+        gameMessageContainer.classList.remove('countdown-transition')
+        gameStartedCountdown(playersScores[playerTurn][0], Object.values(room.users)[playerTurn], room, playerTurn, playersScores)
+    });
 })
 socket.on('user-disconnected', name => {
     if (playersNamesList.querySelector("[data-playername="+ name +"]")) {
@@ -216,36 +234,93 @@ socket.on('user-disconnected', name => {
 function changePlayerStatus() {
     socket.emit('user-status-change', socket.id ,gameLobby)
 }
-let playerTurn = 0;
-let diceResult = [];
+function gameStartedCountdown(playerId, currentPlayer, room, playerTurn, playersScores) {
+    let secondsPassed = 3;
+    var interval = setInterval(() => {
+        if (secondsPassed < 0) {
+            displayTurnMessage(playerId, currentPlayer)
+            gameLogic(room, playerTurn, playersScores);
+            clearInterval(interval)
+        }
+        else if (secondsPassed === 0) {
+            gameMessageContainer.innerText = 'GO';
+            secondsPassed--
+        }
+        else {
+            gameMessageContainer.innerText = secondsPassed;
+            secondsPassed--
+        }
+    }, 1000);
+}
 function gameLogic(room,playerTurn,playersScores) {
     let players = JSON.parse(JSON.stringify(Object.keys(room.users)))
-
+    let diceResult = [];
     if (players[playerTurn] === socket.id) {
         gameWindowContainer.firstElementChild.innerHTML = getGameWindowSetup();
         document.getElementById('throw-dice-button').addEventListener('click', function() {
-            diceNumbers();
+            diceNumbers(diceResult);
             playersScores[playerTurn][1].totalScore += throwScore;
             // check if players/room can be removed
-            // if score < X states
             // dice number function 3 of a kind 4 of a kind and etc.
-            console.log('Dice: ',diceResult)
-            console.log('Throw score: ',throwScore)
-            console.log('Player total score: ', playersScores[playerTurn][1].totalScore)
-            playerTurn++;
-            if (playerTurn == players.length) {
-                playerTurn = 0;
-            }
+
             this.remove()
-            nextPlayer = players[playerTurn];
-            socket.emit('user-turn-finished', nextPlayer, room, playerTurn, playersScores)
+            socket.emit('display-user-results', diceResult, throwScore, playersScores[playerTurn][1].totalScore, playersScores[playerTurn][0], gameLobby)
+            if (playersScores[playerTurn][1].totalScore >= 151) {
+                setTimeout(() => {
+                    socket.emit('game-ended', Object.values(room.users)[playerTurn], playersScores[playerTurn][0], gameLobby)
+                }, 5000);
+            }
+            else {
+                setTimeout(() => {
+                    playerTurn++;
+                    if (playerTurn == players.length) {
+                        playerTurn = 0;
+                    }
+                    socket.emit('user-turn-finished', room, playerTurn, playersScores, gameLobby)
+                }, 5000);
+            }
         })
     }
 }
-socket.on('your-turn', (room,playerTurn,playersScores) => {
+socket.on('user-turn-result-message', (msg, pointsMsg, dice, playerName, playerTotalScore) => {
+    throwDiceAnimation(dice)
+    gameMessageContainer.innerHTML = msg.split(dice + '<br>')[0];
+    setTimeout(() => {
+        // display basic rules /howto play
+        updatePlayerScoresUI(playerName, playerTotalScore)
+        gameMessageContainer.innerHTML = msg.split('<br>')[1] + msg.split('<br>')[2] + pointsMsg;
+    }, 2000);
+})
+socket.on('next-turn', (room,playerTurn,playersScores) => {
+    
+    displayTurnMessage(playersScores[playerTurn][0], Object.values(room.users)[playerTurn])
     gameLogic(room,playerTurn,playersScores);
 })
-function diceNumbers() {
+socket.on('game-ended-screen', (winnerName, msg) => {
+    let modal = document.createElement('div');
+    modal.classList.add('form-modal-popup','triggered')
+    let winMessage = document.createElement('div');
+    winMessage.classList.add('win-message')
+    let leaveButton = document.createElement('a');
+    leaveButton.href = '/';
+    leaveButton.classList.add('red-button')
+    leaveButton.innerText = 'Close game'
+    winMessage.innerHTML = '<h1> ' + winnerName + ' won the game!<br>' + msg + '</h1> ' + leaveButton.outerHTML;
+    document.querySelector('body').append(modal);
+    gamePageContainer.querySelector('#game-container').append(winMessage);
+
+})
+function displayTurnMessage(playerId, currentPlayer) {
+    if (socket.id === playerId) {
+        clearDice()
+        gameMessageContainer.innerText =  "Your turn! Press the button to throw.";
+    }
+    else {
+        clearDice()
+        gameMessageContainer.innerText = "Waiting for " + currentPlayer + " to throw.";
+    }
+}
+function diceNumbers(diceResult) {
     const diceNumber = 5;
     for (var i = 0; i < diceNumber; i++) {
         diceResult[i] =+ Math.floor(Math.random() * 6) + 1;
@@ -260,13 +335,29 @@ function diceNumbers() {
     }
     return {'diceResult' : diceResult,'throwScore' : throwScore};
 }
+function throwDiceAnimation(diceResult) {
+    let dice = document.querySelector('.dice-container').children;
+    
+    for (var i = 0; i < dice.length; i++) {
+        dice[i].classList.add('diceroll-' + diceResult[i])
+    }
+}
+function clearDice() {
+    let dice = document.querySelector('.dice-container').children;
+    
+    for (var i = 0; i < dice.length; i++) {
+        dice[i].className = "";
+    }
+}
 function getGameWindowSetup() {
     let throwButton = document.createElement('button');
     throwButton.classList.add('blue-button');
     throwButton.id = 'throw-dice-button';
     throwButton.innerText = "Throw dice";
     // to do: add dice, dice annimations, background, etc.
-    return throwButton.outerHTML
+    let board = document.createElement('div')
+    board.innerHTML = '<div class="game-background"></div><div class="dice-container"><div id="dice1"></div><div id="dice2"></div><div id="dice3"></div><div id="dice4"></div><div id="dice5"></div></div>'
+    return board.innerHTML + throwButton.outerHTML
 }
 function displayConfirmationButtons() {
     let buttonsContainer = document.createElement('div');
@@ -280,6 +371,23 @@ function displayConfirmationButtons() {
     buttonsContainer.append(yesButton,noButton)
 
     return buttonsContainer.outerHTML
+}
+function updateGameInfoUI() {
+    if (document.querySelector('#players-list button')) {
+        document.querySelector('#players-list button').remove()
+    }
+    document.querySelector('#list-names-container').lastElementChild.innerText = 'Scores';
+    
+    for (var i = 0; i < playersStatusList.children.length; i++) {
+        playersStatusList.children[i].classList.remove('player-ready');
+        playersStatusList.children[i].classList.add('player-score');
+        playersStatusList.children[i].innerText = 0;
+    }
+}
+function updatePlayerScoresUI(playerName, playerScore) {
+    if (playersStatusList.querySelector("[data-playername="+ playerName +"]")) {
+        playersStatusList.querySelector("[data-playername="+ playerName +"]").innerText = playerScore;
+    }
 }
 function appendMessage(message) {
     const messageElement = document.createElement('div');

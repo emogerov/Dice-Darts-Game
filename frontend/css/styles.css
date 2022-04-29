@@ -122,7 +122,7 @@ button.blue-button {
     width: 10em;
     transition: 0.3s all;
 }
-button.red-button {
+button.red-button, a.red-button {
     background: #ee2d2f;
     border: none;
     padding: 0.7em 0;
@@ -132,6 +132,7 @@ button.red-button {
     color: white;
     cursor: pointer;
     width: 10em;
+    text-decoration: none;
     transition: 0.3s all;
 }
 button.green-button {
@@ -149,7 +150,7 @@ button.green-button {
 button.blue-button:hover {
     background: #01baef;
 }
-button.red-button:hover {
+button.red-button:hover, a.red-button:hover {
     opacity: 0.9;
 }
 button.green-button:hover {
@@ -305,23 +306,30 @@ form#gamelobby label {
     display: grid;
     grid-template-columns: 23% 50% 23%;
     gap: 2%;
+    position: relative;
 }
 #players-info {
     display: flex;
     flex-direction: column;
 }
-#players-list {
+#list-names-container {
+    border-bottom: 1px solid #0077b6;
     display: grid;
-    grid-template-columns: 60% 40%;
+    grid-template-columns: 70% 30%;
 }
-#players-names-container {
-    border-right: 1px solid #0077b6;
+#list-names-container span:last-of-type, #players-list ol:last-of-type {
+    border-left: 1px solid #0077b6;
+}
+#list-content-container {
+    display: grid;
+    grid-template-columns: 70% 30%;
 }
 #players-list span {
-    border-bottom: 1px solid #0077b6;
     display: flex;
     padding: 1em;
     font-weight: bold;
+    justify-content: center;
+    align-items: center;
 }
 #players-list ol {
     margin: 0;
@@ -330,6 +338,49 @@ form#gamelobby label {
     display: flex;
     flex-direction: column;
     row-gap: 1em;
+    align-items: center;
+    position: relative;
+}
+li#gamehost:before {
+    background-image: url('../images/host-icon.svg');
+    background-size: 100%;
+    background-repeat: no-repeat;
+    height: 1.3em;
+    width: 1.3em;
+    margin-top: -1px;
+    content: ' ';
+    left: 1em;
+    position: absolute;
+}
+li.you:after {
+    background-image: url('../images/user-icon.svg');
+    background-size: 100%;
+    background-repeat: no-repeat;
+    height: 1.3em;
+    width: 1.3em;
+    margin-top: -1px;
+    content: ' ';
+    right: 1em;
+    position: absolute;
+}
+li.player-unready {
+    background-image: url('../images/unready-status-icon.svg');
+    background-size: 100%;
+    background-repeat: no-repeat;
+    height: 1.3em;
+    width: 1.3em;
+    margin-top: -2px;
+}
+li.player-ready {
+    background-image: url('../images/ready-status-icon.svg');
+    background-size: 100%;
+    background-repeat: no-repeat;
+    height: 1.3em;
+    width: 1.3em;
+    margin-top: -2px;
+}
+#players-names-list li {
+    height: 1.3em;
 }
 button.green-button.small-button {
     padding: 0.7rem 0;
@@ -344,6 +395,7 @@ button.green-button.small-button {
     border: 2px solid #0077b6;
     border-radius: 5px;
     box-shadow: inset 0px 0px 6px 0px #0077b6;
+    position: relative;
 }
 #game-window-container {
     position: relative;
@@ -356,11 +408,20 @@ button#startgame-button {
     top: 0;
     margin-top: 1em;
 }
+#throw-dice-button {
+    position: absolute;
+    top: 1em;
+    left: 0;
+    right: 0;
+    margin-left: auto;
+    margin-right: auto;
+}
 #user-turn-info {
     position: absolute;
     top: 30%;
     font-size: 2rem;
     font-weight: bold;
+    color: white;
     padding-inline: 1em;
 }
 #user-turn-info .message-buttons {
@@ -392,6 +453,21 @@ button#startgame-button {
 #message-input {
     flex-grow: 1;
 }
+.win-message {
+    position: absolute;
+    top: 50%;
+    background: white;
+    padding: 20px 20px;
+    z-index: 3;
+    border-radius: 20px;
+    gap: 1em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    left: 0;
+    right: 0;
+}
 /* Game room css END*/
 .open-flex {
     display: flex!important;
@@ -408,4 +484,80 @@ button#startgame-button {
 }
 h1 {
     font-size: 3em;
+}
+/* Background and Dice images*/
+.game-background {
+    background-image: url('../images/wooden-background.webp');
+    height: 100%;
+    background-size: cover;
+    z-index: -1;
+    position: relative;
+}
+.dice-container {
+    position: absolute;
+    top: 60%;
+    left: 0;
+    right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    width: 80%;
+    display: flex;
+    justify-content: space-evenly;
+}
+.dice-container > * {
+    background-size: 100%;
+    background-repeat: no-repeat;
+    height: 60px;
+    width: 60px;
+}
+.diceroll-1 {
+    background-image: url('../images/Dice-1-b.svg');
+}
+.diceroll-2 {
+    background-image: url('../images/Dice-2-b.svg');
+}
+.diceroll-3 {
+    background-image: url('../images/Dice-3-b.svg');
+}
+.diceroll-4 {
+    background-image: url('../images/Dice-4-b.svg');
+}
+.diceroll-5 {
+    background-image: url('../images/Dice-5-b.svg');
+}
+.diceroll-6 {
+    background-image: url('../images/Dice-6-b.svg');
+}
+/* Animations */
+.countdown-transition {
+    animation: countdown linear 2s;
+    -webkit-animation: countdown linear 2s;
+    -moz-animation: countdown linear 2s;
+    -o-animation: countdown linear 2s;
+    -ms-animation: countdown linear 2s;
+}
+
+@keyframes countdown {
+    0% {opacity:1;}
+    100% {opacity:0;}
+}
+
+@-moz-keyframes countdown {
+    0% {opacity:1;}
+    100% {opacity:0;}
+}
+
+@-webkit-keyframes countdown {
+    0% {opacity:1;}
+    100% {opacity:0;}
+}
+
+@-o-keyframes countdown {
+    0% {opacity:1;}
+    100% {opacity:0;}
+}
+
+@-ms-keyframes countdown {
+    0% {opacity:1;}
+    100% {opacity:0;}
 }

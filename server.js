@@ -169,8 +169,22 @@ io.on('connection', socket => {
 
         io.to(room).emit('game-started', rooms[room],message, playersScores)
     })
-    socket.on('user-turn-finished', (nextPlayer, room, playerTurn, playersScores) => {
-        io.to(nextPlayer).emit('your-turn', room, playerTurn, playersScores)
+    socket.on('display-user-results', (diceResult, throwScore, playerTotalScore, playerId, roomname) => {
+        let pointsNeededMessage = ''
+        if (playerTotalScore < 151) {
+            pointsNeededMessage =  '<br>You need ' + (151-playerTotalScore) + ' more points to win!';
+        }
+        let currentPlayer = rooms[roomname].users[playerId]
+        
+        socket.to(roomname).emit('user-turn-result-message', currentPlayer + ' threw ' + diceResult + '<br>' + currentPlayer + ' got ' + throwScore + " points!<br> " + currentPlayer + "'s Total score: " + playerTotalScore, '', diceResult, currentPlayer, playerTotalScore)
+        io.to(playerId).emit('user-turn-result-message', 'You threw ' + diceResult + '<br>You got ' + throwScore + ' points!<br> Total score: ' + playerTotalScore, pointsNeededMessage, diceResult, currentPlayer, playerTotalScore);
+    })
+    socket.on('user-turn-finished', (room, playerTurn, playersScores, roomname) => {
+        io.to(roomname).emit('next-turn', room, playerTurn, playersScores)
+    })
+    socket.on('game-ended', (player, playerId, roomname) => {
+        socket.to(roomname).emit('game-ended-screen', player, 'Better luck next time.')
+        io.to(playerId).emit('game-ended-screen', player, 'Congratz, you smashed them!!!');
     })
     io.emit('games-list', roomsToShow);
 });
@@ -187,10 +201,8 @@ function checkForFullRooms(roomsToShow) {
     }
 }
 function getGameHost(roomname) {
-    if (Object.keys(rooms[roomname].users).length === 1) {
-        const gameHost = Object.values(rooms[roomname].users).toString();
-        io.to(roomname).emit('game-host-determined', gameHost)
-    }
+    const gameHost = Object.values(rooms[roomname].users)[0].toString();
+    io.to(roomname).emit('game-host-determined', gameHost, Object.keys(rooms[roomname].users)[0])
 }
 function checkForEmptyRooms(roomsToShow) {
     for (let[roomname] of Object.entries(roomsToShow)) {
