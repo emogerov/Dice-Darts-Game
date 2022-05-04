@@ -6,8 +6,34 @@ body {
     max-width: 1280px;
     margin-left: auto;
     margin-right: auto;
+    position: relative;
 }
 /* Index Page */
+#message-container {
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+    width: 100%;
+    background: white;
+    padding: 1em 0;
+    z-index: 2;
+    box-shadow: 0px 0px 6px 0px #0077b6;
+    border-radius: 0 0 20px 20px;
+    color: #ee2d2f;
+    font-size: 1.7rem;
+    font-weight: bold;
+}
+#message-container.error-message {
+    opacity: 1;
+    visibility: visible;
+}
 #main-container {
     display: flex;
     padding: 2em;
@@ -431,15 +457,15 @@ button#startgame-button {
     margin-top: 2rem;
     gap: 1rem;
 }
-#message-container {
+#chat-container {
     width: 80%;
     max-width: 1200px;
 }
-#message-container div {
+#chat-container div {
     background-color: #CCC;
     padding: 5px;
 }
-#message-container div:nth-child(2n) {
+#chat-container div:nth-child(2n) {
     background-color: #FFF;
 }
 #send-container {
@@ -450,7 +476,7 @@ button#startgame-button {
     width: 80%;
     display: flex;
 }
-#message-input {
+#chat-input {
     flex-grow: 1;
 }
 .win-message {

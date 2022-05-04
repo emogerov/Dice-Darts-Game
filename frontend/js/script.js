@@ -1,9 +1,9 @@
 const socket = io();
 
 const gamesList = document.getElementById('games-list');
-const messageContainer = document.getElementById('message-container');
-const messageForm = document.getElementById('send-container');
-const messageInput = document.getElementById('message-input');
+const chatContainer = document.getElementById('chat-container');
+const chatForm = document.getElementById('send-container');
+const chatInput = document.getElementById('chat-input');
 const gamePageContainer = document.getElementById('game-page-container');
 const gameWindowContainer = document.getElementById('game-window-container');
 const playersNamesList = document.getElementById('players-names-list');
@@ -104,16 +104,16 @@ socket.on('roomcode-notrequired', room => {
     gamePageContainer.style.opacity = 1;
     gamePageContainer.style.visibility = 'visible';
 })
-if (messageForm != null) {
+if (chatForm != null) {
     appendMessage('You joined')
     socket.emit('user-connected-to-lobby', gameLobby)
     
-    messageForm.addEventListener('submit', e => {
+    chatForm.addEventListener('submit', e => {
         e.preventDefault()
-        const message = messageInput.value
+        const message = chatInput.value
         appendMessage(`You: ${message}`)
         socket.emit('send-chat-message', gameLobby, message)
-        messageInput.value = ''
+        chatInput.value = ''
     })
 }
 socket.on('chat-message', data => {
@@ -150,14 +150,16 @@ socket.on('user-connected-chat', name => {
 socket.on('game-host-determined', (host, hostId) => {
     playersNamesList.querySelector("[data-playername="+ host +"]").id = 'gamehost';
     if (hostId === socket.id) {
-        let startGameButton = document.createElement('button');
-        startGameButton.id = 'startgame-button';
-        startGameButton.classList.add('blue-button');
-        startGameButton.innerText = 'Start Game';
-        gameWindowContainer.append(startGameButton)
-        startGameButton.addEventListener('click', function() {
-            socket.emit('start-game-button-pressed', gameLobby);
-        })
+        if (!document.querySelector('#startgame-button')) {
+            let startGameButton = document.createElement('button');
+            startGameButton.id = 'startgame-button';
+            startGameButton.classList.add('blue-button');
+            startGameButton.innerText = 'Start Game';
+            gameWindowContainer.append(startGameButton)
+            startGameButton.addEventListener('click', function() {
+                socket.emit('start-game-button-pressed', gameLobby);
+            })
+        }
     }
 })
 socket.on('press-ready-message', msg => {
@@ -192,17 +194,17 @@ socket.on('starting-game-lobby-notfull', msg => {
     gameMessageContainer.innerText = msg;
     gameMessageContainer.innerHTML = gameMessageContainer.innerHTML + displayConfirmationButtons();
     // No button
-    gameMessageContainer.querySelector('.red-button').addEventListener('click', function() {
+    gameMessageContainer.querySelector('#decline.red-button').addEventListener('click', function() {
         gameMessageContainer.innerHTML = '';
         document.querySelector('#startgame-button').style.display = 'block';
     })
     // Yes button
-    gameMessageContainer.querySelector('.blue-button').addEventListener('click', function() {
-        socket.emit('game-started-by-host', gameLobby);
-        gameMessageContainer.innerHTML = '';
+    gameMessageContainer.querySelector('#approve.blue-button').addEventListener('click', function() {
         if (document.querySelector('#startgame-button')) {
             document.querySelector('#startgame-button').remove()
         }
+        socket.emit('game-started-by-host', gameLobby);
+        gameMessageContainer.innerHTML = '';
     })
 })
 socket.on('starting-game-lobby-full', msg => {
@@ -223,13 +225,6 @@ socket.on('game-started', (room,msg,playersScores) => {
         gameMessageContainer.classList.remove('countdown-transition')
         gameStartedCountdown(playersScores[playerTurn][0], Object.values(room.users)[playerTurn], room, playerTurn, playersScores)
     });
-})
-socket.on('user-disconnected', name => {
-    if (playersNamesList.querySelector("[data-playername="+ name +"]")) {
-        playersNamesList.querySelector("[data-playername="+ name +"]").remove();
-        playersStatusList.querySelector("[data-playername="+ name +"]").remove();
-    }
-    appendMessage(`${name} disconnected`);
 })
 function changePlayerStatus() {
     socket.emit('user-status-change', socket.id ,gameLobby)
@@ -276,10 +271,30 @@ function gameLogic(room,playerTurn,playersScores) {
                     if (playerTurn == players.length) {
                         playerTurn = 0;
                     }
-                    socket.emit('user-turn-finished', room, playerTurn, playersScores, gameLobby)
+                    socket.emit('user-turn-finished',room, playerTurn, playersScores, gameLobby)
                 }, 5000);
             }
         })
+    }
+    if (room.users[players[playerTurn]].includes('Bot')) {
+        diceNumbers(diceResult);
+        playersScores[playerTurn][1].totalScore += throwScore;
+
+        socket.emit('display-user-results', diceResult, throwScore, playersScores[playerTurn][1].totalScore, playersScores[playerTurn][0], gameLobby)
+        if (playersScores[playerTurn][1].totalScore >= 151) {
+            setTimeout(() => {
+                socket.emit('game-ended', Object.values(room.users)[playerTurn], playersScores[playerTurn][0], gameLobby)
+            }, 5000);
+        }
+        else {
+            setTimeout(() => {
+                playerTurn++;
+                if (playerTurn == players.length) {
+                    playerTurn = 0;
+                }
+                socket.emit('user-turn-finished',room, playerTurn, playersScores, gameLobby)
+            }, 5000);
+        }
     }
 }
 socket.on('user-turn-result-message', (msg, pointsMsg, dice, playerName, playerTotalScore) => {
@@ -292,7 +307,6 @@ socket.on('user-turn-result-message', (msg, pointsMsg, dice, playerName, playerT
     }, 2000);
 })
 socket.on('next-turn', (room,playerTurn,playersScores) => {
-    
     displayTurnMessage(playersScores[playerTurn][0], Object.values(room.users)[playerTurn])
     gameLogic(room,playerTurn,playersScores);
 })
@@ -305,10 +319,44 @@ socket.on('game-ended-screen', (winnerName, msg) => {
     leaveButton.href = '/';
     leaveButton.classList.add('red-button')
     leaveButton.innerText = 'Close game'
-    winMessage.innerHTML = '<h1> ' + winnerName + ' won the game!<br>' + msg + '</h1> ' + leaveButton.outerHTML;
+    winMessage.innerHTML = '<h1> ' + winnerName + ' won the game!<br>' + msg + '</h1> ' + leaveButton.outerHTML + '<span id="timeleft"></span>';
     document.querySelector('body').append(modal);
     gamePageContainer.querySelector('#game-container').append(winMessage);
+    let secondsPassed = 15;
+    var closeGame = setInterval(() => {
+        if (secondsPassed === 0) {
+            clearInterval(closeGame)
+            socket.emit('remove-room', gameLobby)
+            window.location.replace("/");
+        }
+        else {
+            document.querySelector('#timeleft').innerText = 'You will be removed from lobby in ' + secondsPassed + ' seconds.';
+            secondsPassed--
+        }
+    }, 1000);
 
+})
+socket.on('user-disconnected', (name, gameStarted, room, playersScores) => {
+    if (gameStarted === true) {
+        var oldname = name.replace('Bot','Guest');
+        if (playersNamesList.querySelector("[data-playername="+ oldname +"]")) {
+            playersNamesList.querySelector("[data-playername="+ oldname +"]").innerText = name;
+            playersNamesList.querySelector("[data-playername="+ oldname +"]").dataset.playername = name;
+            playersStatusList.querySelector("[data-playername="+ oldname +"]").dataset.playername = name;
+        }
+        appendMessage(`${name} disconnected`);
+        if (gameMessageContainer.innerText.includes(oldname)) {
+            let playerTurn = Object.values(room.users).indexOf(name);
+            gameLogic(room,playerTurn,playersScores)
+        }
+    }
+    else {
+        if (playersNamesList.querySelector("[data-playername="+ name +"]")) {
+            playersNamesList.querySelector("[data-playername="+ name +"]").remove();
+            playersStatusList.querySelector("[data-playername="+ name +"]").remove();
+        }
+        appendMessage(`${name} disconnected`);
+    }
 })
 function displayTurnMessage(playerId, currentPlayer) {
     if (socket.id === playerId) {
@@ -363,9 +411,11 @@ function displayConfirmationButtons() {
     let buttonsContainer = document.createElement('div');
     buttonsContainer.classList.add('message-buttons');
     let yesButton = document.createElement('button');
+    yesButton.id = 'approve';
     yesButton.classList.add('blue-button');
     yesButton.innerText = "Yes";
     let noButton = document.createElement('button');
+    noButton.id = 'decline';
     noButton.innerText = "No";
     noButton.classList.add('red-button');
     buttonsContainer.append(yesButton,noButton)
@@ -373,8 +423,8 @@ function displayConfirmationButtons() {
     return buttonsContainer.outerHTML
 }
 function updateGameInfoUI() {
-    if (document.querySelector('#players-list button')) {
-        document.querySelector('#players-list button').remove()
+    if (document.querySelector('#players-info button')) {
+        document.querySelector('#players-info button').remove()
     }
     document.querySelector('#list-names-container').lastElementChild.innerText = 'Scores';
     
@@ -392,5 +442,5 @@ function updatePlayerScoresUI(playerName, playerScore) {
 function appendMessage(message) {
     const messageElement = document.createElement('div');
     messageElement.innerText = message;
-    messageContainer.appendChild(messageElement);
+    chatContainer.appendChild(messageElement);
 }

@@ -8,6 +8,31 @@ let joinLobbyButton = document.querySelector('#join-game-btn');
 let lobbySizeDropdown = document.querySelector('.lobbysize-dropdown');
 let lobbySizeOptions = lobbySizeDropdown.lastElementChild.children;
 
+let messageContainer = document.getElementById('message-container')
+function errorMessage() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const myParam = urlParams.get('error');
+    if (myParam) {
+        messageContainer.classList.add('error-message')
+        if (myParam === "startedroom") {
+            messageContainer.innerText = 'The lobby you attempted to join is already in game!';
+        }
+        else if (myParam === "fullroom") {
+            messageContainer.innerText = 'The lobby you attempted to join is full!';
+        }
+        else if (myParam === "roomexists") {
+            messageContainer.innerText = 'Lobby with this name already exists!';
+        }
+        else {
+            messageContainer.innerText = myParam;
+        }
+        setTimeout(() => {
+            messageContainer.classList.remove('error-message')
+        }, 3000);
+    }
+}
+errorMessage()
+
 // Toggle between gamemodes
 for (var i = 0; i < selectModeButtons.length; i++) {
     selectModeButtons[i].addEventListener('click', function() {

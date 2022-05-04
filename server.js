@@ -17,7 +17,8 @@ const rooms = {};
 
 app.post('/gamelobby',function(req,res){
     if (rooms[req.body.gamelobby] != null) {
-        return res.redirect('/')
+        let errorcode = encodeURIComponent('roomexists');
+        return res.redirect('/?error=' + errorcode);
     }
     let lobbyMaxPlayers = req.body.lobbysize;
     if (req.body.lobbyprivate) {
@@ -28,11 +29,12 @@ app.post('/gamelobby',function(req,res){
                 privatelobby: isLobbyPrivate,
                 lobbypassword: lobbyPassword
             },
-            readyusers: []
+            readyusers: [],
+            ingamestate: false
         };
     }
     else {
-        rooms[req.body.gamelobby] = { users: {}, settings: {lobbysize: lobbyMaxPlayers}, readyusers: [] };
+        rooms[req.body.gamelobby] = { users: {}, settings: {lobbysize: lobbyMaxPlayers}, readyusers: [], ingamestate: false };
     }
     res.redirect(req.body.gamelobby)
 });
@@ -42,7 +44,12 @@ app.get('/:gamelobby', (req, res) => {
         return res.redirect('/')
     }
     if (parseInt(Object.entries(rooms[req.params.gamelobby].users).length) === parseInt(rooms[req.params.gamelobby].settings.lobbysize)) {
-        return res.redirect('/')
+        let errorcode = encodeURIComponent('fullroom');
+        return res.redirect('/?error=' + errorcode);
+    }
+    if (rooms[req.params.gamelobby].ingamestate === true) {
+        let errorcode = encodeURIComponent('startedroom');
+        return res.redirect('/?error=' + errorcode);
     }
     res.render('gamelobby', { gameLobby: req.params.gamelobby })
 })
@@ -50,7 +57,9 @@ app.get('/:gamelobby', (req, res) => {
 io.on('connection', socket => {
     let roomsToShow = JSON.parse(JSON.stringify(rooms));
     checkForFullRooms(roomsToShow);
+    checkForStartedRooms(roomsToShow);
     let userStatus = false;
+    let scores = [];
 
     socket.on('user-connected-to-lobby', (room) => {
         if (rooms[room].settings.privatelobby === true) {
@@ -66,6 +75,7 @@ io.on('connection', socket => {
                 socket.to(room).emit('user-connected-chat', socketUsername);
                 roomsToShow = JSON.parse(JSON.stringify(rooms));
                 checkForFullRooms(roomsToShow);
+                checkForStartedRooms(roomsToShow);
                 io.emit('games-list', roomsToShow);
                 getGameHost(room)
                 socket.emit('press-ready-message', 'Press the "Ready" button');
@@ -83,6 +93,7 @@ io.on('connection', socket => {
                 socket.to(room).emit('user-connected-chat', socketUsername);
                 roomsToShow = JSON.parse(JSON.stringify(rooms));
                 checkForFullRooms(roomsToShow);
+                checkForStartedRooms(roomsToShow);
                 io.emit('games-list', roomsToShow);
                 getGameHost(room)
                 socket.emit('press-ready-message', 'Press the "Ready" button');
@@ -93,23 +104,29 @@ io.on('connection', socket => {
     })
     socket.on('disconnect', () => {
         getUserRooms(socket).forEach(room => {
-            socket.to(room).emit('user-disconnected', rooms[room].users[socket.id])
-            rooms[room].readyusers = rooms[room].readyusers.filter(value => value !== rooms[room].users[socket.id])
-            delete rooms[room].users[socket.id];
-            roomsToShow = JSON.parse(JSON.stringify(rooms));
-            checkForFullRooms(roomsToShow);
-            checkForEmptyRooms(roomsToShow);
-            if (rooms[room].readyusers.length === parseInt(Object.entries(rooms[room].users).length)) {
-                io.to(room).emit('waiting-for-host-message', 'Waiting for host to start.');
-            }
-            if (parseInt(Object.entries(rooms[room].users).length) == 0) {
-                io.emit('games-list', roomsToShow);
-                delete rooms[room]
+            if (rooms[room].ingamestate === true) {
+                rooms[room].users[socket.id] = rooms[room].users[socket.id].replace('Guest','Bot')
             }
             else {
-                getGameHost(room)
-                io.emit('games-list', roomsToShow);
+                rooms[room].readyusers = rooms[room].readyusers.filter(value => value !== rooms[room].users[socket.id])
+                delete rooms[room].users[socket.id];
+                if (rooms[room].readyusers.length === parseInt(Object.entries(rooms[room].users).length)) {
+                    io.to(room).emit('waiting-for-host-message', 'Waiting for host to start.');
+                }
+                roomsToShow = JSON.parse(JSON.stringify(rooms));
+                checkForFullRooms(roomsToShow);
+                checkForStartedRooms(roomsToShow);
+                checkForEmptyRooms(roomsToShow);
+                if (parseInt(Object.entries(rooms[room].users).length) == 0) {
+                    delete rooms[room]
+                    io.emit('games-list', roomsToShow);
+                }
+                else {
+                    getGameHost(room)
+                    io.emit('games-list', roomsToShow);
+                }
             }
+            socket.to(room).emit('user-disconnected', rooms[room].users[socket.id], rooms[room].ingamestate, rooms[room], scores)
         })
     })
     socket.on('start-game-button-pressed', room => {
@@ -160,14 +177,19 @@ io.on('connection', socket => {
         }
     })
     socket.on('game-started-by-host', room => {
+        rooms[room].ingamestate = true;
         let message = "Game started";
         let playersScores = Object.keys(rooms[room].users);
 
         for (var i = 0; i < Object.keys(playersScores).length; i++) {
             playersScores[i] = [playersScores[i], {totalScore: 0}]
         }
-
         io.to(room).emit('game-started', rooms[room],message, playersScores)
+        roomsToShow = JSON.parse(JSON.stringify(rooms));
+        checkForStartedRooms(roomsToShow);
+        checkForFullRooms(roomsToShow);
+        checkForEmptyRooms(roomsToShow);
+        io.emit('games-list', roomsToShow);
     })
     socket.on('display-user-results', (diceResult, throwScore, playerTotalScore, playerId, roomname) => {
         let pointsNeededMessage = ''
@@ -175,16 +197,29 @@ io.on('connection', socket => {
             pointsNeededMessage =  '<br>You need ' + (151-playerTotalScore) + ' more points to win!';
         }
         let currentPlayer = rooms[roomname].users[playerId]
-        
-        socket.to(roomname).emit('user-turn-result-message', currentPlayer + ' threw ' + diceResult + '<br>' + currentPlayer + ' got ' + throwScore + " points!<br> " + currentPlayer + "'s Total score: " + playerTotalScore, '', diceResult, currentPlayer, playerTotalScore)
+        if (currentPlayer.includes('Bot')) {
+            io.to(roomname).emit('user-turn-result-message', currentPlayer + ' threw ' + diceResult + '<br>' + currentPlayer + ' got ' + throwScore + " points!<br> " + currentPlayer + "'s Total score: " + playerTotalScore, '', diceResult, currentPlayer, playerTotalScore)
+        }
+        else {
+            socket.to(roomname).emit('user-turn-result-message', currentPlayer + ' threw ' + diceResult + '<br>' + currentPlayer + ' got ' + throwScore + " points!<br> " + currentPlayer + "'s Total score: " + playerTotalScore, '', diceResult, currentPlayer, playerTotalScore)
+        }
         io.to(playerId).emit('user-turn-result-message', 'You threw ' + diceResult + '<br>You got ' + throwScore + ' points!<br> Total score: ' + playerTotalScore, pointsNeededMessage, diceResult, currentPlayer, playerTotalScore);
     })
     socket.on('user-turn-finished', (room, playerTurn, playersScores, roomname) => {
-        io.to(roomname).emit('next-turn', room, playerTurn, playersScores)
+        scores = playersScores;
+        io.to(roomname).emit('next-turn', rooms[roomname], playerTurn, playersScores)
     })
     socket.on('game-ended', (player, playerId, roomname) => {
-        socket.to(roomname).emit('game-ended-screen', player, 'Better luck next time.')
-        io.to(playerId).emit('game-ended-screen', player, 'Congratz, you smashed them!!!');
+        if (player.includes('Bot')) {
+            io.to(roomname).emit('game-ended-screen', player, 'Better luck next time.');
+        }
+        else {
+            socket.to(roomname).emit('game-ended-screen', player, 'Better luck next time.')
+            io.to(playerId).emit('game-ended-screen', player, 'Congratz, you smashed them!!!');
+        }
+    })
+    socket.on('remove-room', roomname => {
+        delete rooms[roomname]
     })
     io.emit('games-list', roomsToShow);
 });
@@ -200,16 +235,23 @@ function checkForFullRooms(roomsToShow) {
         }
     }
 }
-function getGameHost(roomname) {
-    const gameHost = Object.values(rooms[roomname].users)[0].toString();
-    io.to(roomname).emit('game-host-determined', gameHost, Object.keys(rooms[roomname].users)[0])
-}
 function checkForEmptyRooms(roomsToShow) {
     for (let[roomname] of Object.entries(roomsToShow)) {
         if (parseInt(Object.entries(roomsToShow[roomname].users).length) === 0) {
             roomsToShow[roomname].emptyroom = true;
         }
     }
+}
+function checkForStartedRooms(roomsToShow) {
+    for (let[roomname] of Object.entries(roomsToShow)) {
+        if (roomsToShow[roomname].ingamestate === true) {
+            delete roomsToShow[roomname];
+        }
+    }
+}
+function getGameHost(roomname) {
+    const gameHost = Object.values(rooms[roomname].users)[0].toString();
+    io.to(roomname).emit('game-host-determined', gameHost, Object.keys(rooms[roomname].users)[0])
 }
 function getUserRooms(socket) {
     return Object.entries(rooms).reduce((names, [name, room]) => {
