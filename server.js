@@ -105,9 +105,11 @@ io.on('connection', socket => {
     socket.on('disconnect', () => {
         getUserRooms(socket).forEach(room => {
             if (rooms[room].ingamestate === true) {
-                rooms[room].users[socket.id] = rooms[room].users[socket.id].replace('Guest','Bot')
+                rooms[room].users[socket.id] = rooms[room].users[socket.id].replace('Guest','Bot');
+                socket.to(room).emit('user-disconnected', rooms[room].users[socket.id], rooms[room].ingamestate, rooms[room], scores)
             }
             else {
+                socket.to(room).emit('user-disconnected', rooms[room].users[socket.id], rooms[room].ingamestate, rooms[room], scores)
                 rooms[room].readyusers = rooms[room].readyusers.filter(value => value !== rooms[room].users[socket.id])
                 delete rooms[room].users[socket.id];
                 if (rooms[room].readyusers.length === parseInt(Object.entries(rooms[room].users).length)) {
@@ -126,7 +128,7 @@ io.on('connection', socket => {
                     io.emit('games-list', roomsToShow);
                 }
             }
-            socket.to(room).emit('user-disconnected', rooms[room].users[socket.id], rooms[room].ingamestate, rooms[room], scores)
+            
         })
     })
     socket.on('start-game-button-pressed', room => {
@@ -184,6 +186,7 @@ io.on('connection', socket => {
         for (var i = 0; i < Object.keys(playersScores).length; i++) {
             playersScores[i] = [playersScores[i], {totalScore: 0}]
         }
+        scores = playersScores;
         io.to(room).emit('game-started', rooms[room],message, playersScores)
         roomsToShow = JSON.parse(JSON.stringify(rooms));
         checkForStartedRooms(roomsToShow);
