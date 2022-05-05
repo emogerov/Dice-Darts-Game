@@ -255,9 +255,7 @@ function gameLogic(room,playerTurn,playersScores) {
         document.getElementById('throw-dice-button').addEventListener('click', function() {
             diceNumbers(diceResult);
             playersScores[playerTurn][1].totalScore += throwScore;
-            // check if players/room can be removed
-            // dice number function 3 of a kind 4 of a kind and etc.
-
+            
             this.remove()
             socket.emit('display-user-results', diceResult, throwScore, playersScores[playerTurn][1].totalScore, playersScores[playerTurn][0], gameLobby)
             if (playersScores[playerTurn][1].totalScore >= 151) {
@@ -276,6 +274,7 @@ function gameLogic(room,playerTurn,playersScores) {
             }
         })
     }
+    
     if (room.users[players[playerTurn]].includes('Bot')) {
         diceNumbers(diceResult);
         playersScores[playerTurn][1].totalScore += throwScore;
@@ -344,7 +343,7 @@ socket.on('user-disconnected', (name, gameStarted, room, playersScores) => {
             playersNamesList.querySelector("[data-playername="+ oldname +"]").dataset.playername = name;
             playersStatusList.querySelector("[data-playername="+ oldname +"]").dataset.playername = name;
         }
-        appendMessage(`${name} disconnected`);
+        appendMessage(`${oldname} disconnected`);
         if (gameMessageContainer.innerText.includes(oldname)) {
             let playerTurn = Object.values(room.users).indexOf(name);
             gameLogic(room,playerTurn,playersScores)

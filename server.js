@@ -53,13 +53,13 @@ app.get('/:gamelobby', (req, res) => {
     }
     res.render('gamelobby', { gameLobby: req.params.gamelobby })
 })
-
+let scores = [];
 io.on('connection', socket => {
     let roomsToShow = JSON.parse(JSON.stringify(rooms));
     checkForFullRooms(roomsToShow);
     checkForStartedRooms(roomsToShow);
     let userStatus = false;
-    let scores = [];
+
 
     socket.on('user-connected-to-lobby', (room) => {
         if (rooms[room].settings.privatelobby === true) {
