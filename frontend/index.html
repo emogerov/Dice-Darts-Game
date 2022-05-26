@@ -38,6 +38,26 @@
             <div class="selected-mode-container">
                 <div class="singleplayer-mode open-flex">
                     <button id="start-bot-game" class="blue-button">Start Game</button>
+                    <form id="botgame" action="">
+                        <div class="lobbysize-container">
+                            <input id="gamename" name="gamename" type="hidden" value="botgame">
+                            <label for="botgamesize" style="margin-top: 0.5em;">Number of bots (Max 8):</label>
+                            <div class="lobbysize-dropdown">
+                                <div class="dropdown-selected-option">2</div>
+                                <div class="dropdown-options">
+                                    <div class="dropdown-option">2</div>
+                                    <div class="dropdown-option">3</div>
+                                    <div class="dropdown-option">4</div>
+                                    <div class="dropdown-option">5</div>
+                                    <div class="dropdown-option">6</div>
+                                    <div class="dropdown-option">7</div>
+                                    <div class="dropdown-option">8</div>
+                                </div>
+                            </div>
+                        </div>
+                        <input id="botgamesize" type="hidden" name="botgamesize" value="2">
+                        <button type="button" class="green-button" onclick="handleBotGame(this.previousElementSibling.value)">Start</button>
+                    </form>
                 </div>
                 <div class="multiplayer-mode">
                     <div id="room-container">

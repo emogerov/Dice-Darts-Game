@@ -84,6 +84,9 @@ body {
 .selected-mode-container .singleplayer-mode, .selected-mode-container .multiplayer-mode {
     display: none;
 }
+.selected-mode-container .singleplayer-mode {
+    position: relative;
+}
 .selected-mode-container {
     display: flex;
     justify-content: center;
@@ -94,7 +97,7 @@ body {
     flex-direction: column;
     align-items: center;
 }
-#room-container form#gamelobby {
+#room-container form#gamelobby, form#botgame {
     display: none;
     position: absolute;
     top: 0;
@@ -182,13 +185,13 @@ button.red-button:hover, a.red-button:hover {
 button.green-button:hover {
     background: #00b032;
 }
-form#gamelobby input {
+form#gamelobby input, form#botgame input {
     background: white;
     border: 1px solid #0077b6;
     border-radius: 15px;
     padding: 0.8em;
 }
-form#gamelobby label {
+form#gamelobby label, form#gamelobby label {
     font-size: 1.1em;
 }
 .checkbox-label {
@@ -366,6 +369,7 @@ form#gamelobby label {
     row-gap: 1em;
     align-items: center;
     position: relative;
+    justify-content: space-evenly;
 }
 li#gamehost:before {
     background-image: url('../images/host-icon.svg');
@@ -460,13 +464,32 @@ button#startgame-button {
 #chat-container {
     width: 80%;
     max-width: 1200px;
+    padding: 0 0.2em;
+    margin-bottom: 1em;
+    max-height: 190px;
+    border: 1px solid #0077b6;
+    scrollbar-width: thin;
+    scrollbar-color: #0077b6 white;
+}
+#chat-container::-webkit-scrollbar {
+    width: 12px;
+}
+#chat-container::-webkit-scrollbar-track {
+    background: white;
+}
+#chat-container::-webkit-scrollbar-thumb {
+    background-color: #0077b6;
+    border-radius: 20px;
+    border: 3px solid white;
 }
 #chat-container div {
-    background-color: #CCC;
+    background-color: #01baef;
     padding: 5px;
+    color: white;
 }
 #chat-container div:nth-child(2n) {
     background-color: #FFF;
+    color: black;
 }
 #send-container {
     padding-bottom: 30px;
@@ -475,6 +498,18 @@ button#startgame-button {
     max-width: 1200px;
     width: 80%;
     display: flex;
+    gap: 0.5em;
+    margin: 0;
+}
+#game-chatroom #send-button.blue-button {
+    font-size: 1em;
+    padding: 0.5em;
+}
+#game-chatroom input {
+    background: white;
+    border: 1px solid #0077b6;
+    border-radius: 15px;
+    padding: 0.5em;
 }
 #chat-input {
     flex-grow: 1;

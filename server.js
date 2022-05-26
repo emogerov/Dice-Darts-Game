@@ -53,7 +53,9 @@ app.get('/:gamelobby', (req, res) => {
     }
     res.render('gamelobby', { gameLobby: req.params.gamelobby })
 })
+
 let scores = [];
+let turnCounter = 0;
 io.on('connection', socket => {
     let roomsToShow = JSON.parse(JSON.stringify(rooms));
     checkForFullRooms(roomsToShow);
@@ -106,10 +108,11 @@ io.on('connection', socket => {
         getUserRooms(socket).forEach(room => {
             if (rooms[room].ingamestate === true) {
                 rooms[room].users[socket.id] = rooms[room].users[socket.id].replace('Guest','Bot');
-                socket.to(room).emit('user-disconnected', rooms[room].users[socket.id], rooms[room].ingamestate, rooms[room], scores)
+                socket.to(room).emit('user-disconnected', rooms[room].users[socket.id], rooms[room].ingamestate, rooms[room], turnCounter, scores)
+                checkForPlayersInGame(rooms[room].users, room)
             }
             else {
-                socket.to(room).emit('user-disconnected', rooms[room].users[socket.id], rooms[room].ingamestate, rooms[room], scores)
+                socket.to(room).emit('user-disconnected', rooms[room].users[socket.id], rooms[room].ingamestate, rooms[room])
                 rooms[room].readyusers = rooms[room].readyusers.filter(value => value !== rooms[room].users[socket.id])
                 delete rooms[room].users[socket.id];
                 if (rooms[room].readyusers.length === parseInt(Object.entries(rooms[room].users).length)) {
@@ -210,6 +213,7 @@ io.on('connection', socket => {
     })
     socket.on('user-turn-finished', (room, playerTurn, playersScores, roomname) => {
         scores = playersScores;
+        turnCounter = playerTurn;
         io.to(roomname).emit('next-turn', rooms[roomname], playerTurn, playersScores)
     })
     socket.on('game-ended', (player, playerId, roomname) => {
@@ -250,6 +254,17 @@ function checkForStartedRooms(roomsToShow) {
         if (roomsToShow[roomname].ingamestate === true) {
             delete roomsToShow[roomname];
         }
+    }
+}
+function checkForPlayersInGame(users,room) {
+    let botPlayersCount = 0;
+    for (let user of Object.values(users)) {
+        if (user.includes('Bot')) {
+            botPlayersCount++;
+        }
+    }
+    if (botPlayersCount === Object.values(users).length) {
+       delete rooms[room]
     }
 }
 function getGameHost(roomname) {

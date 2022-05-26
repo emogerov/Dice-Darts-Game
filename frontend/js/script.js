@@ -57,6 +57,12 @@ socket.on('games-list', rooms => {
                     gamesList.querySelector("[data-roomid="+ roomname.replace(' ','') +"]").remove();
                 }
             }
+            // Remove rooms in which the game has started from games list
+            if (rooms[roomname].ingamestate === true) {
+                if (gamesList.querySelector("[data-roomid="+ roomname.replace(' ','') +"]")) {
+                    gamesList.querySelector("[data-roomid="+ roomname.replace(' ','') +"]").remove();
+                }
+            }
             // Remove empty rooms from games list
             if (rooms[roomname].emptyroom === true) {
                 if (gamesList.querySelector("[data-roomid="+ roomname.replace(' ','') +"]")) {
@@ -216,11 +222,12 @@ socket.on('game-started', (room,msg,playersScores) => {
         document.querySelector('#startgame-button').remove()
     }
     updateGameInfoUI();
+
     let playerTurn = 0;
     gameMessageContainer.innerText = msg;
     gameMessageContainer.classList.add('countdown-transition')
 
-    gameMessageContainer.addEventListener('animationend', function(event) {
+    gameMessageContainer.addEventListener('animationend', function() {
         gameMessageContainer.innerText = '';
         gameMessageContainer.classList.remove('countdown-transition')
         gameStartedCountdown(playersScores[playerTurn][0], Object.values(room.users)[playerTurn], room, playerTurn, playersScores)
@@ -229,12 +236,19 @@ socket.on('game-started', (room,msg,playersScores) => {
 function changePlayerStatus() {
     socket.emit('user-status-change', socket.id ,gameLobby)
 }
+
 function gameStartedCountdown(playerId, currentPlayer, room, playerTurn, playersScores) {
     let secondsPassed = 3;
     var interval = setInterval(() => {
         if (secondsPassed < 0) {
             displayTurnMessage(playerId, currentPlayer)
-            gameLogic(room, playerTurn, playersScores);
+            if (Object.values(room.users)[0] != playersNamesList.firstElementChild.innerText) {
+                room.users[playerId] = playersNamesList.firstElementChild.innerText;
+                gameLogic(room, playerTurn, playersScores);
+            }
+            else {
+                gameLogic(room, playerTurn, playersScores);
+            }
             clearInterval(interval)
         }
         else if (secondsPassed === 0) {
@@ -250,12 +264,13 @@ function gameStartedCountdown(playerId, currentPlayer, room, playerTurn, players
 function gameLogic(room,playerTurn,playersScores) {
     let players = JSON.parse(JSON.stringify(Object.keys(room.users)))
     let diceResult = [];
+    
     if (players[playerTurn] === socket.id) {
         gameWindowContainer.firstElementChild.innerHTML = getGameWindowSetup();
         document.getElementById('throw-dice-button').addEventListener('click', function() {
             diceNumbers(diceResult);
             playersScores[playerTurn][1].totalScore += throwScore;
-            
+
             this.remove()
             socket.emit('display-user-results', diceResult, throwScore, playersScores[playerTurn][1].totalScore, playersScores[playerTurn][0], gameLobby)
             if (playersScores[playerTurn][1].totalScore >= 151) {
@@ -335,7 +350,7 @@ socket.on('game-ended-screen', (winnerName, msg) => {
     }, 1000);
 
 })
-socket.on('user-disconnected', (name, gameStarted, room, playersScores) => {
+socket.on('user-disconnected', (name, gameStarted, room, playerTurn, playersScores) => {
     if (gameStarted === true) {
         var oldname = name.replace('Bot','Guest');
         if (playersNamesList.querySelector("[data-playername="+ oldname +"]")) {
@@ -343,11 +358,12 @@ socket.on('user-disconnected', (name, gameStarted, room, playersScores) => {
             playersNamesList.querySelector("[data-playername="+ oldname +"]").dataset.playername = name;
             playersStatusList.querySelector("[data-playername="+ oldname +"]").dataset.playername = name;
         }
-        appendMessage(`${oldname} disconnected`);
+        appendMessage(`${oldname} disconnected. ` + name + ` will take over`);
+
         if (gameMessageContainer.innerText.includes(oldname)) {
-            let playerTurn = Object.values(room.users).indexOf(name);
             gameLogic(room,playerTurn,playersScores)
         }
+        
     }
     else {
         if (playersNamesList.querySelector("[data-playername="+ name +"]")) {
@@ -442,4 +458,9 @@ function appendMessage(message) {
     const messageElement = document.createElement('div');
     messageElement.innerText = message;
     chatContainer.appendChild(messageElement);
+    
+    if (chatContainer.scrollHeight > chatContainer.offsetHeight) {
+        chatContainer.style.overflowY = 'scroll';
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
 }
