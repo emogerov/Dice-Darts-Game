@@ -435,6 +435,7 @@ button.green-button.small-button {
     display: flex;
     justify-content: center;
     text-align: center;
+    user-select: none;
 }
 button#startgame-button {
     position: absolute;
@@ -647,6 +648,9 @@ h1 {
     li#gamehost::before {
         left: 0;
     }
+    #user-turn-info .message-buttons {
+        display: grid;
+    }
 }
 @media screen and (max-width: 860px) {
     #game-container {
@@ -715,5 +719,8 @@ h1 {
     }
     li.you::after {
         right: 10%;
+    }
+    #user-turn-info {
+        padding-inline: 0.8em;
     }
 }

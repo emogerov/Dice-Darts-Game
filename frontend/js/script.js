@@ -196,7 +196,6 @@ socket.on('players-not-ready', msg => {
     gameMessageContainer.innerText = msg;
 })
 socket.on('starting-game-lobby-notfull', msg => {
-    document.querySelector('#startgame-button').style.display = 'none';
     gameMessageContainer.innerText = msg;
     gameMessageContainer.innerHTML = gameMessageContainer.innerHTML + displayConfirmationButtons();
     // No button
@@ -416,7 +415,7 @@ function getGameWindowSetup() {
     let throwButton = document.createElement('button');
     throwButton.classList.add('blue-button');
     throwButton.id = 'throw-dice-button';
-    throwButton.innerText = "Throw dice";
+    throwButton.innerText = "Press to throw";
     // to do: add dice, dice annimations, background, etc.
     let board = document.createElement('div')
     board.innerHTML = '<div class="game-background"></div><div class="dice-container"><div id="dice1"></div><div id="dice2"></div><div id="dice3"></div><div id="dice4"></div><div id="dice5"></div></div>'
