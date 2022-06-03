@@ -701,6 +701,9 @@ h1 {
     li.you::after {
         right: 15%;
     }
+    .win-message h1 {
+        font-size: 2em;
+    }
 }
 @media screen and (max-width: 360px) {
     #room-container form#gamelobby {
