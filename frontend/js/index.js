@@ -179,8 +179,6 @@ function handleBotGame(gamesize) {
     displayBotTurnMessage(players[playerTurn])
     botGameLogic(players,playerTurn)
 
-    // Start Game - countdown, append throw button, cycle through bots, game winning msg
-
     function fillBotGameUI(players) {
         let namesList = '';
         let statusList = '';

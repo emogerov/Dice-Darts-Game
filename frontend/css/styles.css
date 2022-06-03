@@ -127,7 +127,7 @@ body {
 }
 #room-container #games-list.opened > * {
     display: grid;
-    grid-template-columns: repeat(4,1fr);
+    grid-template-columns: repeat(4,25%);
 }
 #room-container #games-list span.no-games-msg, .singleplayer-mode span {
     text-align: center;
@@ -317,6 +317,9 @@ form#gamelobby label, form#gamelobby label {
     padding: 1em;
     border-bottom: 1px solid black;
 }
+#games-list.opened div[data-roomid] {
+    word-break: break-word;
+}
 #games-list.opened a {
     padding: 1em;
     border-bottom: 1px solid black;
@@ -464,7 +467,6 @@ button#startgame-button {
 #chat-container {
     width: 80%;
     max-width: 1200px;
-    padding: 0 0.2em;
     margin-bottom: 1em;
     max-height: 190px;
     border: 1px solid #0077b6;
@@ -621,4 +623,94 @@ h1 {
 @-ms-keyframes countdown {
     0% {opacity:1;}
     100% {opacity:0;}
+}
+
+/* Mobile */
+@media screen and (max-width: 1080px) {
+    #game-container {
+        grid-template-columns: 26% 50% 20%;
+    }
+    #send-container {
+        flex-direction: column;
+        width: 90%;
+    }
+    #chat-container {
+        width: 90%;
+    }
+    #game-chatroom #send-button.blue-button {
+        width: 5em;
+        align-self: center;
+    }
+    li.you::after {
+        right: 0;
+    }
+    li#gamehost::before {
+        left: 0;
+    }
+}
+@media screen and (max-width: 860px) {
+    #game-container {
+        grid-template-columns: unset;
+    }
+    #game-chatroom {
+        padding: 2%;
+    }
+    #chat-container {
+        width: 100%;
+    }
+    #send-container {
+        flex-direction: row;
+        width: 100%;
+    }
+    li#gamehost::before {
+        left: 25%;
+    }
+    li.you::after {
+        right: 25%;
+    }
+}
+@media screen and (max-width: 769px) {
+    #room-container #games-list.opened {
+        left: 10%;
+        right: 10%;
+    }
+}
+@media screen and (max-width: 500px) {
+    #room-container #games-list.opened {
+        left: 5%;
+        right: 5%;
+        padding: 2em 1em;
+    }
+    .dice-container {
+        top: 70%;
+        width: 90%;
+    }
+}
+@media screen and (max-width: 440px) {
+    #room-container #games-list.opened {
+        left: 1%;
+        right: 1%;
+        padding: 2em 0.5em;
+    }
+    #games-list.opened div[data-roomid] span:nth-child(2) {
+        word-break: keep-all;
+    }
+    li#gamehost::before {
+        left: 15%;
+    }
+    li.you::after {
+        right: 15%;
+    }
+}
+@media screen and (max-width: 360px) {
+    #room-container form#gamelobby {
+        padding: 2vh 2vw;
+        margin: -2vh -2vw;
+    }
+    li#gamehost::before {
+        left: 10%;
+    }
+    li.you::after {
+        right: 10%;
+    }
 }
